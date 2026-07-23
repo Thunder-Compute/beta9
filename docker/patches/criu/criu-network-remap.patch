@@ -8,15 +8,16 @@ diff --git a/criu/sk-inet.c b/criu/sk-inet.c
 index 566d1c230..3f32de5e3 100644
 --- a/criu/sk-inet.c
 +++ b/criu/sk-inet.c
-@@ -9,0 +10 @@
+@@ -9,0 +10,2 @@
 +#include <errno.h>
-@@ -11,0 +13 @@
++#include <fcntl.h>
+@@ -11,0 +14 @@
 +#include <stdio.h>
-@@ -47,0 +50,3 @@
+@@ -47,0 +51,3 @@
 +#define BEAM_NETWORK_MAP_FILE "beam-network-map-v1"
 +#define BEAM_NETWORK_MAP_VERSION "v1"
 +
-@@ -54,0 +60,10 @@ static LIST_HEAD(inet_ports);
+@@ -54,0 +61,10 @@ static LIST_HEAD(inet_ports);
 +struct beam_network_map {
 +	struct in_addr old_v4;
 +	struct in_addr new_v4;
@@ -27,22 +28,31 @@ index 566d1c230..3f32de5e3 100644
 +static int beam_network_map_status = -1;
 +static struct beam_network_map beam_network_map;
 +
-@@ -707,0 +723,122 @@ static inline int tcp_connection(InetSkEntry *ie)
+@@ -707,0 +724,131 @@ static inline int tcp_connection(InetSkEntry *ie)
 +static int load_beam_network_map(void)
 +{
 +	char version[8], old_v4[INET_ADDRSTRLEN], new_v4[INET_ADDRSTRLEN];
 +	char old_v6[INET6_ADDRSTRLEN], new_v6[INET6_ADDRSTRLEN];
 +	FILE *file;
-+	int fields;
++	int fd, fields;
 +
 +	if (beam_network_map_status >= 0)
 +		return beam_network_map_status;
 +
-+	file = fopen(BEAM_NETWORK_MAP_FILE, "r");
-+	if (file == NULL) {
++	fd = openat(criu_get_image_dir(), BEAM_NETWORK_MAP_FILE, O_RDONLY | O_CLOEXEC);
++	if (fd < 0) {
 +		if (errno == ENOENT)
 +			return beam_network_map_status = 0;
 +		pr_perror("Can't open Beam network map");
++		return -1;
++	}
++	file = fdopen(fd, "r");
++	if (file == NULL) {
++		int saved_errno = errno;
++
++		close(fd);
++		errno = saved_errno;
++		pr_perror("Can't open Beam network map stream");
 +		return -1;
 +	}
 +
@@ -150,17 +160,17 @@ index 566d1c230..3f32de5e3 100644
 +		!beam_address_is_local(ie->family, ie->dst_addr));
 +}
 +
-@@ -713,0 +851,6 @@ static int collect_one_inetsk(void *o, ProtobufCMessage *base, struct cr_img *i)
+@@ -713,0 +861,6 @@ static int collect_one_inetsk(void *o, ProtobufCMessage *base, struct cr_img *i)
 +	if (remap_beam_socket_addresses(ii->ie) < 0)
 +		return -1;
 +
 +	ii->close_on_restore = should_close_external_tcp(ii->ie);
 +	if (ii->close_on_restore)
 +		pr_info("TCP connection id %x has an external peer and will be restored closed\n", ii->ie->id);
-@@ -719 +862 @@ static int collect_one_inetsk(void *o, ProtobufCMessage *base, struct cr_img *i)
+@@ -719 +872 @@ static int collect_one_inetsk(void *o, ProtobufCMessage *base, struct cr_img *i)
 -	if (tcp_connection(ii->ie))
 +	if (tcp_connection(ii->ie) && !ii->close_on_restore)
-@@ -781 +924 @@ static int post_open_inet_sk(struct file_desc *d, int sk)
+@@ -781 +934 @@ static int post_open_inet_sk(struct file_desc *d, int sk)
 -	if (tcp_connection(ii->ie)) {
 +	if (tcp_connection(ii->ie) && !ii->close_on_restore) {
 diff --git a/criu/sk-tcp.c b/criu/sk-tcp.c

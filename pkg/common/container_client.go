@@ -308,13 +308,17 @@ func (c *ContainerClient) StreamLogs(ctx context.Context, containerId string, ou
 func (c *ContainerClient) StreamLogsWithReady(ctx context.Context, containerId string, outputChan chan OutputMsg, ready func()) error {
 	stream, err := c.client.ContainerStreamLogs(ctx, &pb.ContainerStreamLogsRequest{ContainerId: containerId})
 	if err != nil {
+		if ready != nil {
+			ready()
+		}
 		return fmt.Errorf("error creating log stream: %w", err)
 	}
-	if _, err := stream.Header(); err != nil {
-		return fmt.Errorf("error attaching log stream: %w", err)
-	}
+	_, err = stream.Header()
 	if ready != nil {
 		ready()
+	}
+	if err != nil {
+		return fmt.Errorf("error attaching log stream: %w", err)
 	}
 
 	// Keepalive for streaming logs

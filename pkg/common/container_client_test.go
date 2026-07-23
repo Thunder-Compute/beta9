@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"errors"
 	"io"
 	"testing"
 	"time"
@@ -15,11 +16,12 @@ import (
 type attachmentClientStream struct {
 	pb.ContainerService_ContainerStreamLogsClient
 	attach <-chan struct{}
+	err    error
 }
 
 func (s *attachmentClientStream) Header() (metadata.MD, error) {
 	<-s.attach
-	return nil, nil
+	return nil, s.err
 }
 
 func (s *attachmentClientStream) Recv() (*pb.ContainerLogEntry, error) {
@@ -59,4 +61,23 @@ func TestStreamLogsReadyWaitsForWorkerAttachment(t *testing.T) {
 		t.Fatal("did not report worker attachment")
 	}
 	require.NoError(t, <-done)
+}
+
+func TestStreamLogsReadyReportsAttachmentFailure(t *testing.T) {
+	attach := make(chan struct{})
+	close(attach)
+	ready := make(chan struct{})
+	attachErr := errors.New("attachment failed")
+	client := &ContainerClient{client: &attachmentContainerClient{
+		stream: &attachmentClientStream{attach: attach, err: attachErr},
+	}}
+
+	err := client.StreamLogsWithReady(context.Background(), "container-id", make(chan OutputMsg), func() { close(ready) })
+
+	select {
+	case <-ready:
+	default:
+		t.Fatal("did not report failed worker attachment")
+	}
+	require.ErrorIs(t, err, attachErr)
 }

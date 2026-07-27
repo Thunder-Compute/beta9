@@ -99,7 +99,17 @@ func (t *PodTask) Execute(ctx context.Context, options ...interface{}) error {
 	// no runner inside to claim it, and unclaimed tasks are expired by the
 	// dispatcher monitor.
 	if err := t.ps.taskDispatcher.Claim(ctx, t.msg.WorkspaceName, t.msg.StubId, t.msg.TaskId, containerId); err != nil {
-		log.Warn().Str("task_id", t.msg.TaskId).Str("container_id", containerId).Err(err).Msg("failed to claim pod run task")
+		t.failTask(ctx, task, err.Error())
+		t.ps.deletePodRunTaskMapping(ctx, containerId)
+		if stopErr := t.ps.scheduler.Stop(&types.StopContainerArgs{
+			ContainerId: containerId,
+			Reason:      types.StopContainerReasonUser,
+			Force:       true,
+		}); stopErr != nil {
+			log.Warn().Str("task_id", t.msg.TaskId).Str("container_id", containerId).Err(stopErr).Msg("failed to stop pod run container after claim failure")
+		}
+		t.ps.taskDispatcher.Complete(ctx, t.msg.WorkspaceName, t.msg.StubId, t.msg.TaskId)
+		return err
 	}
 
 	return nil
@@ -153,7 +163,17 @@ func (t *PodTask) Retry(ctx context.Context) error {
 	}
 
 	if err := t.ps.taskDispatcher.Claim(ctx, t.msg.WorkspaceName, t.msg.StubId, t.msg.TaskId, containerId); err != nil {
-		log.Warn().Str("task_id", t.msg.TaskId).Str("container_id", containerId).Err(err).Msg("failed to claim pod run task")
+		t.failTask(ctx, updatedTask, err.Error())
+		t.ps.deletePodRunTaskMapping(ctx, containerId)
+		if stopErr := t.ps.scheduler.Stop(&types.StopContainerArgs{
+			ContainerId: containerId,
+			Reason:      types.StopContainerReasonUser,
+			Force:       true,
+		}); stopErr != nil {
+			log.Warn().Str("task_id", t.msg.TaskId).Str("container_id", containerId).Err(stopErr).Msg("failed to stop pod run container after claim failure")
+		}
+		t.ps.taskDispatcher.Complete(ctx, t.msg.WorkspaceName, t.msg.StubId, t.msg.TaskId)
+		return err
 	}
 
 	return nil

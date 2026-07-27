@@ -48,10 +48,11 @@ func (g *shellGroup) ShellConnect(ctx echo.Context) error {
 
 	containerState, err := g.ss.containerRepo.GetContainerState(containerId)
 	if err != nil {
+		var notFound *types.ErrContainerStateNotFound
+		if errors.As(err, &notFound) {
+			return ctx.String(http.StatusGone, "Container is no longer running")
+		}
 		return ctx.String(http.StatusBadGateway, "Failed to retrieve container state")
-	}
-	if containerState == nil {
-		return ctx.String(http.StatusGone, "Container is no longer running")
 	}
 	if containerState.StubId != stub.ExternalId ||
 		containerState.WorkspaceId != cc.AuthInfo.Workspace.ExternalId {

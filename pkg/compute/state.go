@@ -220,6 +220,9 @@ type AgentWorkerSlotState struct {
 	WorkerImage               string              `json:"worker_image"`
 	NetworkSlotPoolSize       uint32              `json:"network_slot_pool_size"`
 	ContainerStartConcurrency uint32              `json:"container_start_concurrency"`
+	ThunderAPIURL             string              `json:"thunder_api_url,omitempty"`
+	ThunderAPIToken           string              `json:"thunder_api_token,omitempty"`
+	ThunderZoneID             string              `json:"thunder_zone_id,omitempty"`
 	RequiresPoolSelector      bool                `json:"requires_pool_selector"`
 	Priority                  int32               `json:"priority"`
 	Preemptable               bool                `json:"preemptable"`

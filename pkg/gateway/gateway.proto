@@ -1485,6 +1485,9 @@ message AgentWorkerSlot {
   // Deterministic identity of the restart-relevant slot specification.
   string generation = 25;
   bool cpu_affinity_enforced = 26;
+  string thunder_api_url = 27;
+  string thunder_api_token = 28;
+  string thunder_zone_id = 29;
 }
 
 message StreamAgentRequest { string agent_token = 1; }

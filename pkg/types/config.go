@@ -463,8 +463,15 @@ func (m PoolMode) AgentHosted() bool {
 	return m == PoolModePrivate || m == PoolModeMarketplace
 }
 
+type ThunderConfig struct {
+	APIURL   string `key:"apiURL" json:"api_url,omitempty"`
+	APIToken string `key:"apiToken" json:"api_token,omitempty"`
+	ZoneID   string `key:"zoneID" json:"zone_id,omitempty"`
+}
+
 type WorkerPoolConfig struct {
 	GPUType                   string                            `key:"gpuType" json:"gpu_type"`
+	Thunder                   ThunderConfig                     `key:"thunder" json:"thunder,omitempty"`
 	Runtime                   string                            `key:"runtime" json:"runtime"`                                 // Kubernetes RuntimeClass for pod (e.g., "nvidia")
 	ContainerRuntime          string                            `key:"containerRuntime" json:"container_runtime"`              // Pool-specific container runtime: "runc" or "gvisor"
 	ContainerRuntimeConfig    RuntimeConfig                     `key:"containerRuntimeConfig" json:"container_runtime_config"` // Pool-specific container runtime configuration

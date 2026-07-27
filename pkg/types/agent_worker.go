@@ -164,3 +164,9 @@ const (
 	PrivatePoolFallbackWait     = "wait"
 	PrivatePoolFallbackFail     = "fail"
 )
+
+const (
+	ThunderAPIURLEnv   = "THUNDER_API_URL"
+	ThunderAPITokenEnv = "THUNDER_API_TOKEN"
+	ThunderZoneIDEnv   = "THUNDER_ZONE_ID"
+)

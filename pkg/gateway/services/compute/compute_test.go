@@ -5582,6 +5582,24 @@ func TestAgentWorkerSlotStateCarriesMarketplaceModeAndRuntime(t *testing.T) {
 	if err != nil || strings.Contains(string(privateSlotJSON), "cpu_affinity_enforced") {
 		t.Fatalf("private slot unexpectedly changed its generation input: %s, err=%v", privateSlotJSON, err)
 	}
+	privateThunderConfig := types.WorkerPoolConfig{
+		Thunder: types.ThunderConfig{
+			APIURL:   "https://giga-staging.thundercompute.com:2096",
+			APIToken: "tcapi-private-token",
+			ZoneID:   "private-zone-id",
+		},
+	}
+	privateThunderSlot := agentWorkerSlotState(config, privateState, worker, privateThunderConfig, "token-id", "token-hash")
+	privateWireSlot := agentWorkerSlotToProto(privateThunderSlot, "worker-token")
+	if privateThunderSlot.ThunderAPIURL != "https://giga-staging.thundercompute.com:2096" || privateThunderSlot.ThunderAPIToken != "tcapi-private-token" || privateThunderSlot.ThunderZoneID != "private-zone-id" {
+		t.Fatalf("private slot Thunder config = %q / %q / %q", privateThunderSlot.ThunderAPIURL, privateThunderSlot.ThunderAPIToken, privateThunderSlot.ThunderZoneID)
+	}
+	if privateWireSlot.ThunderApiUrl != "https://giga-staging.thundercompute.com:2096" || privateWireSlot.ThunderApiToken != "tcapi-private-token" || privateWireSlot.ThunderZoneId != "private-zone-id" {
+		t.Fatalf("private wire slot Thunder config = %q / %q / %q", privateWireSlot.ThunderApiUrl, privateWireSlot.ThunderApiToken, privateWireSlot.ThunderZoneId)
+	}
+	if privateThunderSlot.CPUAffinityEnforced != nil {
+		t.Fatal("private slot with Thunder config must retain agent-level CPU affinity configuration")
+	}
 
 	managedState := &model.AgentTokenState{
 		WorkspaceID:           "admin-workspace",
@@ -5606,12 +5624,24 @@ func TestAgentWorkerSlotStateCarriesMarketplaceModeAndRuntime(t *testing.T) {
 		ContainerStartConcurrency: 64,
 		NetworkSlotPoolSize:       128,
 		Priority:                  10,
+		Thunder: types.ThunderConfig{
+			APIURL:   "https://giga-staging.thundercompute.com:2096",
+			APIToken: "tcapi-token",
+			ZoneID:   "zone-id",
+		},
 	}, "token-id", "token-hash")
 	if slot.ContainerRuntime != types.ContainerRuntimeRunc.String() || slot.CPUAffinityEnforced == nil || !*slot.CPUAffinityEnforced || slot.ContainerStartConcurrency != 64 || slot.NetworkSlotPoolSize != 128 || slot.Priority != 10 {
 		t.Fatalf("managed slot did not use live pool config: %#v", slot)
 	}
-	if wireSlot := agentWorkerSlotToProto(slot, "worker-token"); !wireSlot.CpuAffinityEnforced {
+	wireSlot = agentWorkerSlotToProto(slot, "worker-token")
+	if !wireSlot.CpuAffinityEnforced {
 		t.Fatal("managed slot did not carry CPU affinity configuration to the agent")
+	}
+	if slot.ThunderAPIURL != "https://giga-staging.thundercompute.com:2096" || slot.ThunderAPIToken != "tcapi-token" || slot.ThunderZoneID != "zone-id" {
+		t.Fatalf("managed slot Thunder config = %q / %q / %q", slot.ThunderAPIURL, slot.ThunderAPIToken, slot.ThunderZoneID)
+	}
+	if wireSlot.ThunderApiUrl != "https://giga-staging.thundercompute.com:2096" || wireSlot.ThunderApiToken != "tcapi-token" || wireSlot.ThunderZoneId != "zone-id" {
+		t.Fatalf("wire slot Thunder config = %q / %q / %q", wireSlot.ThunderApiUrl, wireSlot.ThunderApiToken, wireSlot.ThunderZoneId)
 	}
 }
 

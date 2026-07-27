@@ -123,6 +123,15 @@ func dockerRunArgs(name, image, imageID, configPath string, bootstrap bootstrapC
 		env[types.NvidiaVisibleDevicesEnv] = assignment
 		env[types.WorkerGPUDevicesEnv] = assignment
 	}
+	if strings.TrimSpace(slot.ThunderApiUrl) != "" {
+		env[types.ThunderAPIURLEnv] = slot.ThunderApiUrl
+	}
+	if strings.TrimSpace(slot.ThunderApiToken) != "" {
+		env[types.ThunderAPITokenEnv] = slot.ThunderApiToken
+	}
+	if strings.TrimSpace(slot.ThunderZoneId) != "" {
+		env[types.ThunderZoneIDEnv] = slot.ThunderZoneId
+	}
 	envKeys := make([]string, 0, len(env))
 	for key := range env {
 		envKeys = append(envKeys, key)

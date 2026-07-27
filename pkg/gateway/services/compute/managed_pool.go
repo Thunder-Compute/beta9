@@ -120,6 +120,10 @@ func managedPoolConfig(name string, config types.WorkerPoolConfig) *pb.PoolConfi
 	return pool
 }
 
+func isConfigManagedAgentPool(config types.WorkerPoolConfig) bool {
+	return config.Mode == types.PoolModeExternal && config.AgentHosted()
+}
+
 func newManagedPoolState(workspaceID, name string, source types.WorkerPoolManagementSource, createdBy string, config types.WorkerPoolConfig, now time.Time) *model.PoolState {
 	configCopy := config
 	return &model.PoolState{
@@ -234,7 +238,7 @@ func (s *Service) managedPoolCatalog(ctx context.Context) (map[string]*model.Poo
 
 	names := make([]string, 0, len(s.appConfig.Worker.Pools))
 	for name, config := range s.appConfig.Worker.Pools {
-		if config.AgentHosted() {
+		if isConfigManagedAgentPool(config) {
 			names = append(names, name)
 		}
 	}
@@ -690,7 +694,7 @@ func (s *Service) CreateManagedMachine(ctx context.Context, authInfo *auth.AuthI
 	}
 	if state.ManagementSource == types.WorkerPoolManagementSourceConfig {
 		configured, ok := s.appConfig.Worker.Pools[state.Name]
-		if !ok || !configured.AgentHosted() {
+		if !ok || !isConfigManagedAgentPool(configured) {
 			return nil, model.ErrManagedPoolNotFound
 		}
 	}

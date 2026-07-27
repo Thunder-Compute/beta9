@@ -418,6 +418,8 @@ func TestReconcileManagedPoolsOnlyMaterializesAgentExternalPools(t *testing.T) {
 	service := managedPoolTestService(types.AppConfig{Worker: types.WorkerConfig{Pools: map[string]types.WorkerPoolConfig{
 		"local":                {Mode: types.PoolModeLocal},
 		"provider-backed":      {Mode: types.PoolModeExternal, Provider: &providerBacked},
+		"private-agent":        {Mode: types.PoolModePrivate},
+		"marketplace-agent":    {Mode: types.PoolModeMarketplace},
 		"providerless-agent":   {Mode: types.PoolModeExternal, Priority: 10},
 		"named-agent-provider": {Mode: types.PoolModeExternal, Provider: &agentProvider, Priority: 20},
 	}}}, &fakeComputeRepo{})

@@ -324,6 +324,9 @@ func TestDockerRunArgsUsesConfigurableRouteTargetHost(t *testing.T) {
 		NetworkPrefix:             "10.0.0.0/24",
 		NetworkSlotPoolSize:       64,
 		ContainerStartConcurrency: 12,
+		ThunderApiUrl:             "https://giga-staging.thundercompute.com:2096",
+		ThunderApiToken:           "tcapi-token",
+		ThunderZoneId:             "zone-id",
 	}, agentWorkerDirs("/tmp/agent-state", "", "worker-one"), workerContainerResourceLimits{})
 
 	if !containsArg(args, "-e", types.WorkerRouteTargetEnv+"=host.docker.internal") {
@@ -345,6 +348,9 @@ func TestDockerRunArgsUsesConfigurableRouteTargetHost(t *testing.T) {
 		types.NvidiaVisibleDevicesEnv + "=0,1",
 		types.WorkerStartConcurrencyEnv + "=12",
 		types.WorkerNetworkSlotsEnv + "=64",
+		types.ThunderAPIURLEnv + "=https://giga-staging.thundercompute.com:2096",
+		types.ThunderAPITokenEnv + "=tcapi-token",
+		types.ThunderZoneIDEnv + "=zone-id",
 	} {
 		if !containsArg(args, "-e", want) {
 			t.Fatalf("expected %s env in docker args: %#v", want, args)

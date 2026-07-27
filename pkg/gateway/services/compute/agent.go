@@ -744,6 +744,7 @@ func agentWorkerSlotState(config types.AppConfig, agentState *model.AgentTokenSt
 	requiresPoolSelector := worker.RequiresPoolSelector
 	priority := worker.Priority
 	preemptable := worker.Preemptable
+	thunderConfig := poolConfig.Thunder
 	var cpuAffinityEnforced *bool
 
 	// Managed pool configuration is authoritative and may change while the
@@ -783,6 +784,9 @@ func agentWorkerSlotState(config types.AppConfig, agentState *model.AgentTokenSt
 		WorkerImage:               firstNonEmpty(agentState.WorkerImageOverride, agentWorkerImage(config)),
 		NetworkSlotPoolSize:       networkSlots,
 		ContainerStartConcurrency: startConcurrency,
+		ThunderAPIURL:             strings.TrimSpace(thunderConfig.APIURL),
+		ThunderAPIToken:           strings.TrimSpace(thunderConfig.APIToken),
+		ThunderZoneID:             strings.TrimSpace(thunderConfig.ZoneID),
 		RequiresPoolSelector:      requiresPoolSelector,
 		Priority:                  priority,
 		Preemptable:               preemptable,
@@ -869,6 +873,9 @@ func agentWorkerSlotToProto(slot *model.AgentWorkerSlotState, workerToken string
 		NetworkSlotPoolSize:       slot.NetworkSlotPoolSize,
 		ContainerStartConcurrency: slot.ContainerStartConcurrency,
 		CpuAffinityEnforced:       slot.CPUAffinityEnforced != nil && *slot.CPUAffinityEnforced,
+		ThunderApiUrl:             slot.ThunderAPIURL,
+		ThunderApiToken:           slot.ThunderAPIToken,
+		ThunderZoneId:             slot.ThunderZoneID,
 		RequiresPoolSelector:      slot.RequiresPoolSelector,
 		Priority:                  slot.Priority,
 		PrioritySet:               true,

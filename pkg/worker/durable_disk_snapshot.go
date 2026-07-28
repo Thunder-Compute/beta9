@@ -528,11 +528,25 @@ func restoreDurableDiskDirectorySnapshotWithCache(ctx context.Context, store dur
 	if err := restoreDurableDiskDirectoryManifest(ctx, store, cacheReader, manifest, stagingDir); err != nil {
 		return nil, err
 	}
-	if err := os.RemoveAll(targetDir); err != nil {
+
+	backupDir := ""
+	if _, err := os.Lstat(targetDir); err == nil {
+		backupDir = stagingDir + ".prev"
+		if err := os.Rename(targetDir, backupDir); err != nil {
+			return nil, err
+		}
+	} else if !os.IsNotExist(err) {
 		return nil, err
 	}
+
 	if err := os.Rename(stagingDir, targetDir); err != nil {
+		if backupDir != "" {
+			_ = os.Rename(backupDir, targetDir)
+		}
 		return nil, err
+	}
+	if backupDir != "" {
+		_ = os.RemoveAll(backupDir)
 	}
 	return manifest, nil
 }

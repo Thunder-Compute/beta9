@@ -160,6 +160,8 @@ func (m *Metadata) SetFsNode(ctx context.Context, id string, metadata *FSMetadat
 		})
 	} else {
 		pipe.HSet(ctx, key, ToSlice(metadata))
+		pipe.HDel(ctx, MetadataKeys.MetadataFsNodeData(id), id)
+		pipe.ZRem(ctx, MetadataKeys.MetadataFsNodeIndex(id), id)
 	}
 	if _, err := pipe.Exec(ctx); err != nil {
 		return fmt.Errorf("failed to set cachefs node metadata <%v>: %w", key, err)

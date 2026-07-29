@@ -13,6 +13,7 @@ import (
 	"github.com/beam-cloud/beta9/pkg/network"
 	"github.com/beam-cloud/beta9/pkg/types"
 	pb "github.com/beam-cloud/beta9/proto"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -387,7 +388,7 @@ func bindSyncRequestToContainer(request *pb.SyncContainerWorkspaceRequest, conta
 		return nil
 	}
 
-	boundRequest := *request
+	boundRequest := proto.Clone(request).(*pb.SyncContainerWorkspaceRequest)
 	boundRequest.ContainerId = containerId
-	return &boundRequest
+	return boundRequest
 }

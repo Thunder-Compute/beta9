@@ -73,10 +73,16 @@ func (m Systemd) runner() Runner {
 func SystemdUnit(spec Spec) string {
 	spec, _ = spec.normalized()
 	spec.Env = systemdEnv(spec.Env, spec.StateDir)
+	// ExecStopPost also runs on crash recovery and systemctl restart. Only
+	// uninstall Thunder on a permanent stop (not auto-restart or reboot).
+	unitName := spec.Name + types.AgentServiceUnitExtension
 	thunderUninstallHook := systemdCommand([]string{
 		"/bin/sh",
 		"-c",
-		"if [ -x /usr/local/bin/uninstall-thunder.sh ]; then sudo THUNDER_UNINSTALL_NOWARN=1 /usr/local/bin/uninstall-thunder.sh; fi",
+		"if [ \"$SERVICE_RESULT\" != \"success\" ]; then exit 0; fi; " +
+			"if systemctl list-jobs --no-legend 2>/dev/null | grep -F '" + unitName + "' | grep -Eq 'start|restart'; then exit 0; fi; " +
+			"if systemctl is-system-running 2>/dev/null | grep -Eq 'stopping|finalizing'; then exit 0; fi; " +
+			"if [ -x /usr/local/bin/uninstall-thunder.sh ]; then sudo THUNDER_UNINSTALL_NOWARN=1 /usr/local/bin/uninstall-thunder.sh; fi",
 	})
 
 	var b strings.Builder

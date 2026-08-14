@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/beam-cloud/beta9/pkg/types"
 	pb "github.com/beam-cloud/beta9/proto"
@@ -156,6 +157,7 @@ func TestThunderPreInitHookUsesCachedInstaller(t *testing.T) {
 
 	assert.Equal(t, "thunder_client_install", hook.Name)
 	assert.Equal(t, "curl -fsSL https://get.thundercompute.com/install.sh | THUNDER_NOWARN=1 THUNDER_INSTALL_MODE=client THUNDER_CENTRAL_URL='https://gateway.example' THUNDER_ENROLLMENT_TOKEN='enroll-token' sh", hook.Script)
+	assert.Equal(t, 2*time.Minute, hook.Timeout)
 }
 
 func TestThunderPreInitHookRequiresCachedInstaller(t *testing.T) {

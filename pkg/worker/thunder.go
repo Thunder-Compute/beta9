@@ -21,6 +21,7 @@ const (
 	thunderCudaDriverLibraryPath = "/usr/lib/x86_64-linux-gnu/libcuda.so.1"
 	thunderEnrollmentRPCTimeout  = 10 * time.Second
 	thunderTeardownRPCTimeout    = 5 * time.Second
+	thunderInstallTimeout        = 2 * time.Minute
 )
 
 type ContainerThunderManager struct {
@@ -160,8 +161,9 @@ func (s *Worker) thunderPreInitHook(request *types.ContainerRequest) (runtime.Pr
 	}
 
 	return runtime.PreInitHook{
-		Name:   "thunder_client_install",
-		Script: withoutThunderInstallerSudo(cmd),
+		Name:    "thunder_client_install",
+		Script:  withoutThunderInstallerSudo(cmd),
+		Timeout: thunderInstallTimeout,
 	}, nil
 }
 

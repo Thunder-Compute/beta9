@@ -3,6 +3,7 @@ package runtime
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
 )
@@ -11,8 +12,9 @@ const preInitShellName = "beta9-preinit"
 const preInitDefaultPath = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 type PreInitHook struct {
-	Name   string
-	Script string
+	Name    string
+	Script  string
+	Timeout time.Duration
 }
 
 func InjectPreInitHooks(spec *specs.Spec, hooks ...PreInitHook) error {
@@ -58,7 +60,11 @@ func preInitScript(hooks []PreInitHook) string {
 			builder.WriteString(hook.Name)
 			builder.WriteByte('\n')
 		}
-		builder.WriteString(script)
+		if hook.Timeout > 0 {
+			builder.WriteString(wrapPreInitScriptWithTimeout(script, hook.Timeout))
+		} else {
+			builder.WriteString(script)
+		}
 		builder.WriteByte('\n')
 		wroteHook = true
 	}
@@ -67,6 +73,19 @@ func preInitScript(hooks []PreInitHook) string {
 	}
 	builder.WriteString("exec \"$@\"")
 	return builder.String()
+}
+
+func wrapPreInitScriptWithTimeout(script string, timeout time.Duration) string {
+	seconds := int((timeout + time.Second - 1) / time.Second)
+	if seconds < 1 {
+		seconds = 1
+	}
+	// Integer seconds (no unit suffix) is accepted by GNU and BusyBox timeout.
+	return fmt.Sprintf("timeout %d bash -o pipefail -c %s", seconds, shellSingleQuote(script))
+}
+
+func shellSingleQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", `'"'"'`) + "'"
 }
 
 func envHasKey(env []string, key string) bool {

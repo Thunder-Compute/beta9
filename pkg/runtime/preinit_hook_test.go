@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"testing"
+	"time"
 
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/stretchr/testify/require"
@@ -54,4 +55,29 @@ func TestInjectPreInitHooksRequiresProcessArgs(t *testing.T) {
 
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "process args")
+}
+
+func TestInjectPreInitHooksWrapsTimedHooksWithTimeout(t *testing.T) {
+	spec := &specs.Spec{Process: &specs.Process{Args: []string{"python3"}}}
+
+	err := InjectPreInitHooks(spec, PreInitHook{
+		Name:    "install",
+		Script:  "curl -fsSL https://example.test/install.sh | THUNDER_URL='https://gateway.example' sh",
+		Timeout: 2 * time.Minute,
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, []string{
+		"bash",
+		"-o",
+		"pipefail",
+		"-c",
+		"set -e\n# install\ntimeout 120 bash -o pipefail -c 'curl -fsSL https://example.test/install.sh | THUNDER_URL='\"'\"'https://gateway.example'\"'\"' sh'\nexec \"$@\"",
+		preInitShellName,
+		"python3",
+	}, spec.Process.Args)
+}
+
+func TestWrapPreInitScriptWithTimeoutCeilsSubSecondDurations(t *testing.T) {
+	require.Equal(t, "timeout 1 bash -o pipefail -c 'true'", wrapPreInitScriptWithTimeout("true", 500*time.Millisecond))
 }
